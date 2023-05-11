@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Visualisation de données</title>
+</head>
+<body>
+  <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+  <script>
+    const div = d3.selectAll("div");
+  </script>
+  <script src="https://d3js.org/d3-scale-chromatic.v1.min.js"></script>
+  <div id="stackedchart"></div>
+  <script>  
+  
+// set the dimensions and margins of the graph
+const margin = {top: 20, right: 30, bottom: 30, left: 55},
+    width = 1200 - margin.left - margin.right,
+    height = 900 - margin.top - margin.bottom;
+
+// append the svg object to the body of the page
+const svg = d3.select("#stackedchart")
+  .append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform",
+          `translate(${margin.left}, ${margin.top})`);
+
+// Parse the Data
+d3.csv("https://raw.githubusercontent.com/Blackhole1504/VisualisationDonnees/main/evolutionConsoFinale14.csv").then( function(data) {
+
+  // List of groups = header of the csv files
+  const keys = data.columns.slice(1)
+
+  // X axis
+  const x = d3.scaleLinear()
+    .domain([1910, 2021])
+    .range([ 0, width ]);
+  svg.append("g")
+    .attr("transform", `translate(0, ${height})`)
+    .call(d3.axisBottom(x).ticks(30));
+
+  // Y axis
+  const y = d3.scaleLinear()
+    .domain([0, 900000])
+    .range([ height, 0 ]);
+  svg.append("g")
+    .call(d3.axisLeft(y));
+
+  // color palette
+  var color = d3.scaleOrdinal().domain(keys)
+  .range(d3.schemeCategory10);  // liste at https://github.com/d3/d3-scale-chromatic
+  
+  //stack the data?
+  const stackedData = d3.stack()
+    .keys(keys)
+    (data)
+    //console.log("This is the stack result: ", stackedData)
+
+  // Show the areas
+  svg
+    .selectAll("mylayers")
+    .data(stackedData)
+    .join("path")
+      .style("fill", function(d) { return color(d.key); })
+      .attr("d", d3.area()
+        .x(function(d, i) { return x(d.data.Année); })
+        .y0(function(d) { return y(d[0]); })
+        .y1(function(d) { return y(d[1]); })
+    )
+
+    // Legend
+    var legende = ["Produits pétroliers","Electricité","Gaz","Charbon","Energie du bois","Chaleur à distance","Déchets industriels","Energies renouvelables"];
+    var size = 20
+    svg.selectAll("mydots")
+      .data(legende)
+      .enter()
+      .append("rect")
+        .attr("x", 100)
+        .attr("y", function(d,i){ return 100 + i*(size+5)}) // 100 is where the first dot appears. 25 is the distance between dots
+        .attr("width", size)
+        .attr("height", size)
+        .style("fill", function(d){ return color(d)})
+    svg.selectAll("mylabels")
+    .data(legende)
+    .enter()
+    .append("text")
+      .attr("x", 100 + size*1.2)
+      .attr("y", function(d,i){ return 100 + i*(size+5) + (size/2)}) // 100 is where the first dot appears. 25 is the distance between dots
+      .style("fill", function(d){ return color(d)})
+      .text(function(d){ return d})
+      .attr("text-anchor", "left")
+      .style("alignment-baseline", "middle")
+
+})
+  </script>
+</body>
+</html>
